@@ -70,12 +70,15 @@ class GrokAutomationSuggestionsSensor(GrokAutomationBaseSensor):
     @property
     def state(self) -> str | None:
         """Return the state of the sensor."""
-        return self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet")
+        if self._coordinator.data.get("yaml_block") or self._coordinator.data.get("description"):
+            return "Available"
+        return "No suggestions"
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
         return {
+            "suggestions": self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet"),
             "description": self._coordinator.data.get("description"),
             "yaml_block": self._coordinator.data.get("yaml_block"),
             "last_update": str(self._coordinator.data.get("last_update")),
@@ -95,7 +98,7 @@ class GrokAutomationStatusSensor(GrokAutomationBaseSensor):
     @property
     def state(self) -> str | None:
         """Return the state of the sensor."""
-        if self._coordinator._last_error:  # Changed from last_error to _last_error
+        if self._coordinator._last_error:
             return PROVIDER_STATUS_ERROR
         return PROVIDER_STATUS_CONNECTED if self._coordinator.data.get(SENSOR_KEY_STATUS) else PROVIDER_STATUS_DISCONNECTED
 
