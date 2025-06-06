@@ -79,8 +79,8 @@ class GrokAutomationSuggestionsSensor(GrokAutomationBaseSensor):
         """Return the state attributes."""
         # Convertir les valeurs potentiellement None en chaînes et tronquer
         suggestions = str(self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet"))[:500]
-        description = str(self._coordinator.data.get("description", ""))[:500]
-        yaml_block = str(self._coordinator.data.get("yaml_block", ""))[:500]
+        description = str(self._coordinator.data.get("description", ""))[:800]
+        yaml_block = str(self._coordinator.data.get("yaml_block", ""))[:1500]
 
         return {
             "suggestions_summary": suggestions,
