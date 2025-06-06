@@ -44,7 +44,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 20  # Réduit de 50 à 20 pour limiter le prompt
+        self.entity_limit = 20
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -118,12 +118,28 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 match = YAML_RE.search(response)
                 yaml_block = match.group(1).strip() if match else None
                 description = YAML_RE.sub("", response).strip() if match else None
+                # Créer une notification persistante
                 persistent_notification.async_create(
                     self.hass,
                     message=response,
                     title="Grok Automation Suggestions",
                     notification_id=f"grok_automation_suggestions_{now.timestamp()}",
                 )
+                # Écrire les suggestions dans un fichier
+                suggestions_data = {
+                    "timestamp": now.isoformat(),
+                    "suggestions": response,
+                    "description": description,
+                    "yaml_block": yaml_block,
+                    "entities_processed": list(picked.keys()),
+                }
+                suggestions_file = Path(self.hass.config.path("grok_suggestions.yaml"))
+                try:
+                    async with await anyio.open_file(suggestions_file, "w", encoding="utf-8") as file:
+                        await file.write(yaml.safe_dump(suggestions_data, allow_unicode=True))
+                    _LOGGER.debug(f"Suggestions written to {suggestions_file}")
+                except Exception as err:
+                    _LOGGER.error(f"Failed to write suggestions to {suggestions_file}: {err}")
                 self.data = {
                     "suggestions": response,
                     "description": description,
@@ -163,8 +179,8 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
     async def _build_prompt(self, entities: dict) -> str:
         """Build the prompt for Grok API."""
         _LOGGER.debug(f"Building prompt for {len(entities)} entities")
-        MAX_ATTR = 200  # Réduit de 500 à 200 pour limiter la taille des attributs
-        MAX_AUTOM = 5   # Réduit à 5 automatisations
+        MAX_ATTR = 200
+        MAX_AUTOM = 5
         ent_sections: list[str] = []
         for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
             domain = eid.split(".")[0]
@@ -237,7 +253,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(f"Reading automations from file, max={max_autom}")
         automations_file = Path(self.hass.config.path()) / "automations.yaml"
         autom_codes: list[str] = []
-        max_autom = min(max_autom, 5)  # Limiter à 5 automatisations
+        max_autom = min(max_autom, 5)
         try:
             async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
                 content = await file.read()
