@@ -17,7 +17,7 @@ CONF_GROK_API_KEY = "grok_api_key"
 CONF_GROK_MODEL = "grok_model"
 ENDPOINT_GROK = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODELS = {
-    "Grok": "grok-3-latest"  # Default model for xAI API, adjust as needed (e.g., grok-2-012)
+    "Grok": "grok-beta"  # Changed from grok-3-latest to grok-beta
 }
 
 # Service & attribute names
@@ -28,7 +28,7 @@ SERVICE_GENERATE_SUGGESTIONS = "generate_suggestions"
 PROVIDER_STATUS_CONNECTED = "connected"
 PROVIDER_STATUS_DISCONNECTED = "disconnected"
 PROVIDER_STATUS_ERROR = "error"
-PROVIDER_STATUS_INITIALIZING = "initializing"  # Added for coordinator initialization
+PROVIDER_STATUS_INITIALIZING = "initializing"
 
 # Sensor Keys
 SENSOR_KEY_SUGGESTIONS = "suggestions"
