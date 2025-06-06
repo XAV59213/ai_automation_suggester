@@ -16,9 +16,8 @@ from .const import (
     PROVIDER_STATUS_CONNECTED,
     PROVIDER_STATUS_DISCONNECTED,
     PROVIDER_STATUS_ERROR,
-    PROVIDER_STATUS_INITIALIZING,
+    PROVIDER_STATUS_INITIALIZED,
 )
-from .coordinator import GrokAutomationCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class GrokAutomationBaseSensor(SensorEntity):
         self._coordinator = coordinator
         self._entry = entry
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
+            "identifiers": [(DOMAIN, entry.entry_id)],
             "name": f"Grok Automation Suggester ({entry.title})",
             "manufacturer": "xAI",
             "model": "Grok Automation",
@@ -77,13 +76,19 @@ class GrokAutomationSuggestionsSensor(GrokAutomationBaseSensor):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
+        # Résumé limité à 500 caractères pour chaque champ
+        suggestions = self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet")[:500]
+        description = self._coordinator.data.get("description", "")[:500]
+        yaml_block = self._coordinator.data.get("yaml_block", "")[:500]
+
         return {
-            "suggestions": self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet"),
-            "description": self._coordinator.data.get("description"),
-            "yaml_block": self._coordinator.data.get("yaml_block"),
-            "last_update": str(self._coordinator.data.get("last_update")),
-            "entities_processed": self._coordinator.data.get("entities_processed", []),
-            "provider": self._coordinator.data.get("provider"),
+            "suggestions_summary": suggestions,
+            "description_summary": description,
+            "yaml_block_summary": yaml_block,
+            "last_update": str(self._coordinator.data.get("last_update", "")),
+            "entities_processed": self._coordinator.data.get("entities_processed", [])[:10],  # Limiter à 10 entités
+            "provider": self._coordinator.data.get("provider", ""),
+            "full_suggestions": "Consultez les notifications persistantes ou le fichier grok_suggestions.yaml pour les suggestions complètes."
         }
 
 class GrokAutomationStatusSensor(GrokAutomationBaseSensor):
