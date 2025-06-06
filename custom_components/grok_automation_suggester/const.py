@@ -8,7 +8,7 @@ INTEGRATION_NAME = "Grok Automation Suggester"
 # Token budgeting
 CONF_MAX_INPUT_TOKENS = "max_input_tokens"
 CONF_MAX_OUTPUT_TOKENS = "max_output_tokens"
-DEFAULT_MAX_INPUT_TOKENS = 500
+DEFAULT_MAX_INPUT_TOKENS = 1000  # Increased from 500
 DEFAULT_MAX_OUTPUT_TOKENS = 500
 DEFAULT_TEMPERATURE = 0.7
 
@@ -17,7 +17,7 @@ CONF_GROK_API_KEY = "grok_api_key"
 CONF_GROK_MODEL = "grok_model"
 ENDPOINT_GROK = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODELS = {
-    "Grok": "grok-beta"  # Changed from grok-3-latest to grok-beta
+    "Grok": "grok-beta"
 }
 
 # Service & attribute names
