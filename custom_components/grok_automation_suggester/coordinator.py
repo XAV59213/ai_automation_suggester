@@ -22,6 +22,10 @@ from .const import (
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_TEMPERATURE,
     DEFAULT_MODELS,
+    SENSOR_KEY_STATUS,
+    PROVIDER_STATUS_CONNECTED,
+    PROVIDER_STATUS_DISCONNECTED,
+    PROVIDER_STATUS_ERROR,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +61,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             "entities_processed": [],
             "provider": "Grok",
             "last_error": None,
+            SENSOR_KEY_STATUS: PROVIDER_STATUS_INITIALIZING,
         }
         self.device_registry: dr.DeviceRegistry | None = None
         self.entity_registry: er.EntityRegistry | None = None
@@ -100,6 +105,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
             if not picked:
                 self.previous_entities = current
+                self.data[SENSOR_KEY_STATUS] = PROVIDER_STATUS_CONNECTED
                 return self.data
             prompt = await self._build_prompt(picked)
             response = await self._grok(prompt)
@@ -121,6 +127,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     "entities_processed": list(picked.keys()),
                     "provider": "Grok",
                     "last_error": None,
+                    SENSOR_KEY_STATUS: PROVIDER_STATUS_CONNECTED,
                 }
             else:
                 self.data.update(
@@ -131,6 +138,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                         "last_update": now,
                         "entities_processed": [],
                         "last_error": self._last_error,
+                        SENSOR_KEY_STATUS: PROVIDER_STATUS_DISCONNECTED,
                     }
                 )
             self.previous_entities = current
@@ -138,7 +146,12 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self._last_error = str(err)
             _LOGGER.error("Coordinator fatal error: %s", err)
-            self.data["last_error"] = self._last_error
+            self.data.update(
+                {
+                    "last_error": self._last_error,
+                    SENSOR_KEY_STATUS: PROVIDER_STATUS_ERROR,
+                }
+            )
             return self.data
 
     async def _build_prompt(self, entities: dict) -> str:
@@ -228,14 +241,14 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         try:
             async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
                 content = await file.read()
-                automations = yaml.safe_load(content)
+                automations = yaml.safe_load(content) or []
             for automation in automations[:max_autom]:
                 aid = automation.get("id", "unknown_id")
                 alias = automation.get("alias", "Unnamed Automation")
                 description = automation.get("description", "")
-                trigger = automation.get("trigger", []) + automation.get("triggers", [])
-                condition = automation.get("condition", []) + automation.get("conditions", [])
-                action = automation.get("action", []) + automation.get("actions", [])
+                trigger = automation.get("trigger", []) or automation.get("triggers", [])
+                condition = automation.get("condition", []) or automation.get("conditions", [])
+                action = automation.get("action", []) or automation.get("actions", [])
                 code_block = (
                     f"Automation Code for automation.{aid}:\n"
                     "```yaml\n"
