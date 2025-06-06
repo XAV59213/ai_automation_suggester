@@ -28,7 +28,7 @@ SERVICE_GENERATE_SUGGESTIONS = "generate_suggestions"
 PROVIDER_STATUS_CONNECTED = "connected"
 PROVIDER_STATUS_DISCONNECTED = "disconnected"
 PROVIDER_STATUS_ERROR = "error"
-PROVIDER_STATUS_INITIALIZING = "initializing"
+PROVIDER_STATUS_INITIALIZING = "initializing"  # Added for coordinator initialization
 
 # Sensor Keys
 SENSOR_KEY_SUGGESTIONS = "suggestions"
