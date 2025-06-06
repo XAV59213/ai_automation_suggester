@@ -80,22 +80,22 @@ class GrokAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class GrokAutomationOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry):
-        self.config_entry = config_entry
+        self._config_entry = config_entry  # Use a different attribute name to avoid deprecated behavior
 
     async def async_step_init(self, user_input=None):
         if user_input:
             new_data = {
-                **self.config_entry.options,
+                **self._config_entry.options,
                 **user_input,
-                CONF_MAX_INPUT_TOKENS: user_input.get(CONF_MAX_INPUT_TOKENS, self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)),
-                CONF_MAX_OUTPUT_TOKENS: user_input.get(CONF_MAX_OUTPUT_TOKENS, self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)),
+                CONF_MAX_INPUT_TOKENS: user_input.get(CONF_MAX_INPUT_TOKENS, self._config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)),
+                CONF_MAX_OUTPUT_TOKENS: user_input.get(CONF_MAX_OUTPUT_TOKENS, self._config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)),
             }
             return self.async_create_entry(title="", data=new_data)
 
         schema = {
             vol.Optional(CONF_GROK_API_KEY): str,
-            vol.Optional(CONF_GROK_MODEL, default=self.config_entry.data.get(CONF_GROK_MODEL, DEFAULT_MODELS["Grok"])): str,
-            vol.Optional(CONF_MAX_INPUT_TOKENS, default=self.config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)): vol.All(vol.Coerce(int), vol.Range(min=100)),
-            vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=self.config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)): vol.All(vol.Coerce(int), vol.Range(min=100)),
+            vol.Optional(CONF_GROK_MODEL, default=self._config_entry.data.get(CONF_GROK_MODEL, DEFAULT_MODELS["Grok"])): str,
+            vol.Optional(CONF_MAX_INPUT_TOKENS, default=self._config_entry.data.get(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)): vol.All(vol.Coerce(int), vol.Range(min=100)),
+            vol.Optional(CONF_MAX_OUTPUT_TOKENS, default=self._config_entry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)): vol.All(vol.Coerce(int), vol.Range(min=100)),
         }
         return self.async_show_form(step_id="init", data_schema=vol.Schema(schema))
