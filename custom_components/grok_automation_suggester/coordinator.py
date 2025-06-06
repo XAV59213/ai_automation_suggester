@@ -26,6 +26,7 @@ from .const import (
     PROVIDER_STATUS_CONNECTED,
     PROVIDER_STATUS_DISCONNECTED,
     PROVIDER_STATUS_ERROR,
+    PROVIDER_STATUS_INITIALIZING,  # Added to fix NameError
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -248,13 +249,13 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 description = automation.get("description", "")
                 trigger = automation.get("trigger", []) or automation.get("triggers", [])
                 condition = automation.get("condition", []) or automation.get("conditions", [])
-                action = automation.get("action", []) or automation.get("actions", [])
+                action = automation.get("action", []) or automation.get("actions", {})
                 code_block = (
                     f"Automation Code for automation.{aid}:\n"
                     "```yaml\n"
                     f"- id: '{aid}'\n"
-                    f"  alias: '{alias}'\n"
-                    f"  description: '{description}'\n"
+                    f"  alias: {alias}\n"
+                    f"  description: {description}\n"
                     f"  trigger: {trigger}\n"
                     f"  condition: {condition}\n"
                     f"  action: {action}\n"
