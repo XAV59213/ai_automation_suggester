@@ -95,7 +95,7 @@ class GrokAutomationStatusSensor(GrokAutomationBaseSensor):
     @property
     def state(self) -> str | None:
         """Return the state of the sensor."""
-        if self._coordinator.last_error:
+        if self._coordinator._last_error:  # Changed from last_error to _last_error
             return PROVIDER_STATUS_ERROR
         return PROVIDER_STATUS_CONNECTED if self._coordinator.data.get(SENSOR_KEY_STATUS) else PROVIDER_STATUS_DISCONNECTED
 
