@@ -1,4 +1,4 @@
-name: Validate with hassfest
+name: Validate with hassfest and HACS
 
 on:
   push:
@@ -11,19 +11,28 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.11"  # Compatible with recent Home Assistant versions
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install homeassistant
+          pip install homeassistant==2024.1.0  # Match version in hacs.json
+          pip install hacs
+
+      - name: Verify Home Assistant installation
+        run: |
+          python -c "import homeassistant; print('Home Assistant version:', homeassistant.__version__)"
+
       - name: Run hassfest validation
         run: |
           python -m script.hassfest
-      - name: Check HACS compatibility
+
+      - name: Run HACS validation
         run: |
-          pip install hacs
           python -m hacs validate
