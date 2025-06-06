@@ -22,10 +22,10 @@ class ProviderValidator:
     def __init__(self, hass):
         self.session = async_get_clientsession(hass)
 
-    async def validate_groq(self, api_key: str) -> Optional[str]:
+    async def validate_grok(self, api_key: str) -> Optional[str]:
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         try:
-            resp = await self.session.get("https://api.groq.com/openai/v1/models", headers=headers)
+            resp = await self.session.get("https://api.x.ai/v1/models", headers=headers)
             return None if resp.status == 200 else await resp.text()
         except Exception as err:
             return str(err)
@@ -41,7 +41,7 @@ class GrokAutomationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: Dict[str, str] = {}
         if user_input:
             self.validator = ProviderValidator(self.hass)
-            error = await self.validator.validate_groq(user_input[CONF_GROK_API_KEY])
+            error = await self.validator.validate_grok(user_input[CONF_GROK_API_KEY])
             if error is None:
                 self.data.update({
                     **user_input,
