@@ -15,9 +15,9 @@ DEFAULT_TEMPERATURE = 0.7
 # Grok-specific keys
 CONF_GROK_API_KEY = "grok_api_key"
 CONF_GROK_MODEL = "grok_model"
-ENDPOINT_GROQ = "https://api.groq.com/openai/v1/chat/completions"
+ENDPOINT_GROK = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODELS = {
-    "Grok": "Grok-3"  # Modèle par défaut, à ajuster si l’API de xAI utilise autre chose
+    "Grok": "grok-beta"  # Default model for xAI API, adjust as needed (e.g., grok-2-012)
 }
 
 # Service & attribute names
