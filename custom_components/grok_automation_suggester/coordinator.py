@@ -44,19 +44,19 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 20
+        self.entity_limit = 20  # Réduit pour limiter la taille du prompt
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
         self._last_error: str | None = None
         self.data: dict = {
             "suggestions": "No suggestions yet",
-            "description": None,
-            "yaml_block": None,
+            "description": "",
+            "yaml_block": "",
             "last_update": None,
             "entities_processed": [],
             "provider": "Grok",
-            "last_error": None,
+            "last_error": "",
             SENSOR_KEY_STATUS: PROVIDER_STATUS_INITIALIZING,
         }
         self.device_registry: dr.DeviceRegistry | None = None
@@ -116,8 +116,8 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             if response:
                 _LOGGER.debug(f"Received response: {response[:200]}...")
                 match = YAML_RE.search(response)
-                yaml_block = match.group(1).strip() if match else None
-                description = YAML_RE.sub("", response).strip() if match else None
+                yaml_block = match.group(1).strip() if match else ""
+                description = YAML_RE.sub("", response).strip() if match else ""
                 # Créer une notification persistante
                 persistent_notification.async_create(
                     self.hass,
@@ -147,7 +147,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     "last_update": now,
                     "entities_processed": list(picked.keys()),
                     "provider": "Grok",
-                    "last_error": None,
+                    "last_error": "",
                     SENSOR_KEY_STATUS: PROVIDER_STATUS_CONNECTED,
                 }
             else:
@@ -155,11 +155,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 self.data.update(
                     {
                         "suggestions": "No suggestions available",
-                        "description": None,
-                        "yaml_block": None,
+                        "description": "",
+                        "yaml_block": "",
                         "last_update": now,
                         "entities_processed": [],
-                        "last_error": self._last_error,
+                        "last_error": self._last_error or "No response from API",
                         SENSOR_KEY_STATUS: PROVIDER_STATUS_DISCONNECTED,
                     }
                 )
@@ -170,6 +170,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"Coordinator fatal error: {str(err)}")
             self.data.update(
                 {
+                    "suggestions": "Error occurred",
+                    "description": "",
+                    "yaml_block": "",
+                    "last_update": now,
+                    "entities_processed": [],
                     "last_error": self._last_error,
                     SENSOR_KEY_STATUS: PROVIDER_STATUS_ERROR,
                 }
@@ -179,8 +184,8 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
     async def _build_prompt(self, entities: dict) -> str:
         """Build the prompt for Grok API."""
         _LOGGER.debug(f"Building prompt for {len(entities)} entities")
-        MAX_ATTR = 200
-        MAX_AUTOM = 5
+        MAX_ATTR = 200  # Réduit pour limiter la taille des attributs
+        MAX_AUTOM = 5   # Réduit pour limiter les automatisations
         ent_sections: list[str] = []
         for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
             domain = eid.split(".")[0]
