@@ -26,7 +26,7 @@ from .const import (
     PROVIDER_STATUS_CONNECTED,
     PROVIDER_STATUS_DISCONNECTED,
     PROVIDER_STATUS_ERROR,
-    PROVIDER_STATUS_INITIALIZING,  # Added to fix NameError
+    PROVIDER_STATUS_INITIALIZING,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.scan_all = False
         self.selected_domains: list[str] = []
         self.entity_limit = 200
-        self.automation_read_file = False
+        self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
         self._last_error: str | None = None
@@ -86,6 +86,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         return
 
     async def _async_update_data(self) -> dict:
+        _LOGGER.debug("Starting data update")
         try:
             now = datetime.now()
             self.last_update = now
@@ -105,12 +106,15 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     }
             picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
             if not picked:
+                _LOGGER.debug("No new entities to process")
                 self.previous_entities = current
                 self.data[SENSOR_KEY_STATUS] = PROVIDER_STATUS_CONNECTED
                 return self.data
             prompt = await self._build_prompt(picked)
+            _LOGGER.debug(f"Generated prompt length: {len(prompt)}")
             response = await self._grok(prompt)
             if response:
+                _LOGGER.debug(f"Received response: {response[:200]}...")
                 match = YAML_RE.search(response)
                 yaml_block = match.group(1).strip() if match else None
                 description = YAML_RE.sub("", response).strip() if match else None
@@ -131,6 +135,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     SENSOR_KEY_STATUS: PROVIDER_STATUS_CONNECTED,
                 }
             else:
+                _LOGGER.warning("No response from Grok API")
                 self.data.update(
                     {
                         "suggestions": "No suggestions available",
@@ -146,7 +151,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             return self.data
         except Exception as err:
             self._last_error = str(err)
-            _LOGGER.error("Coordinator fatal error: %s", err)
+            _LOGGER.error(f"Coordinator fatal error: {str(err)}")
             self.data.update(
                 {
                     "last_error": self._last_error,
@@ -156,6 +161,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             return self.data
 
     async def _build_prompt(self, entities: dict) -> str:
+        _LOGGER.debug(f"Building prompt for {len(entities)} entities")
         MAX_ATTR = 500
         MAX_AUTOM = 100
         ent_sections: list[str] = []
@@ -215,11 +221,13 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
                 "Existing Automations:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-                "Please propose detailed automations and improvements that reference only the entity_ids above."
+                "Please propose detailed automatisations and improvements that reference only the entity_ids above."
             )
+        _LOGGER.debug(f"Prompt built, length: {len(builded_prompt)}")
         return builded_prompt
 
     def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
+        _LOGGER.debug(f"Reading default automations, max={max_autom}")
         autom_sections: list[str] = []
         for aid in self.hass.states.async_entity_ids("automation")[:max_autom]:
             st = self.hass.states.get(aid)
@@ -237,6 +245,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         return autom_sections
 
     async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
+        _LOGGER.debug(f"Reading automations from file, max={max_autom}")
         automations_file = Path(self.hass.config.path()) / "automations.yaml"
         autom_codes: list[str] = []
         try:
@@ -266,10 +275,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         except FileNotFoundError:
             _LOGGER.error("The automations.yaml file was not found.")
         except yaml.YAMLError as err:
-            _LOGGER.error("Error parsing automations.yaml: %s", err)
+            _LOGGER.error(f"Error parsing automations.yaml: {err}")
         return autom_codes
 
     async def _grok(self, prompt: str) -> str | None:
+        _LOGGER.debug(f"Sending request to Grok API with prompt length: {len(prompt)}")
         try:
             api_key = self._opt(CONF_GROK_API_KEY)
             model = self._opt(CONF_GROK_MODEL, DEFAULT_MODELS["Grok"])
@@ -277,6 +287,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             if not api_key:
                 raise ValueError("Grok API key not configured")
             if len(prompt) // 4 > in_budget:
+                _LOGGER.warning(f"Prompt truncated to fit input budget: {in_budget * 4}")
                 prompt = prompt[:in_budget * 4]
             body = {
                 "model": model,
@@ -285,12 +296,16 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": DEFAULT_TEMPERATURE,
             }
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            _LOGGER.debug(f"Request headers: {headers}, body: {body}")
             async with self.session.post(ENDPOINT_GROK, headers=headers, json=body) as resp:
+                _LOGGER.debug(f"API response status: {resp.status}")
                 if resp.status != 200:
-                    self._last_error = f"Grok error {resp.status}: {await resp.text()}"
+                    error_text = await resp.text()
+                    self._last_error = f"Grok error {resp.status}: {error_text}"
                     _LOGGER.error(self._last_error)
                     return None
                 res = await resp.json()
+                _LOGGER.debug(f"API response: {res}")
                 if not isinstance(res, dict) or "choices" not in res or not res["choices"] or "message" not in res["choices"][0] or "content" not in res["choices"][0]["message"]:
                     raise ValueError(f"Unexpected response format: {res}")
                 return res["choices"][0]["message"]["content"]
