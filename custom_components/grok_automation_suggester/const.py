@@ -17,7 +17,7 @@ CONF_GROK_API_KEY = "grok_api_key"
 CONF_GROK_MODEL = "grok-3-latest"
 ENDPOINT_GROK = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODELS = {
-    "Grok": "grok-beta"
+    "Grok": "grok-3-latest"
 }
 
 # Service & attribute names
