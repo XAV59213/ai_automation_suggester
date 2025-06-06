@@ -14,7 +14,7 @@ DEFAULT_TEMPERATURE = 0.7
 
 # Grok-specific keys
 CONF_GROK_API_KEY = "grok_api_key"
-CONF_GROK_MODEL = "grok_model"
+CONF_GROK_MODEL = "grok-3-latest"
 ENDPOINT_GROK = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODELS = {
     "Grok": "grok-beta"
