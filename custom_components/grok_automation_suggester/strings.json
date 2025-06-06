@@ -1,6 +1,5 @@
 {
   "title": "Grok Automation Suggester",
-  "description": "Une intégration qui utilise l’IA Grok de xAI pour générer des suggestions d’automatisations Home Assistant avec une touche d’humour et de créativité intergalactique ! 🚀",
   "config": {
     "step": {
       "user": {
@@ -13,7 +12,7 @@
           "max_output_tokens": "Tokens de sortie maximum"
         },
         "errors": {
-          "api_error": "Erreur de validation de la clé API : [error_message]"
+          "api_error": "Erreur de validation de la clé API. Vérifiez votre clé et réessayez."
         }
       }
     },
