@@ -9,7 +9,7 @@ INTEGRATION_NAME = "Grok Automation Suggester"
 CONF_MAX_INPUT_TOKENS = "max_input_tokens"
 CONF_MAX_OUTPUT_TOKENS = "max_output_tokens"
 DEFAULT_MAX_INPUT_TOKENS = 1000  # Increased from 500
-DEFAULT_MAX_OUTPUT_TOKENS = 500
+DEFAULT_MAX_OUTPUT_TOKENS = 1000
 DEFAULT_TEMPERATURE = 0.7
 
 # Grok-specific keys
