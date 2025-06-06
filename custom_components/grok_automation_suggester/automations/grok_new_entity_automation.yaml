@@ -1,0 +1,12 @@
+- id: grok_new_entity_automation
+  alias: Détection de nouvelle entité pour Grok Suggestions
+  description: Déclenche la génération de suggestions lorsqu’une nouvelle entité est détectée.
+  trigger:
+    - platform: event
+      event_type: entity_registry_updated
+      event_data:
+        action: create
+  action:
+    - service: grok_automation_suggester.generate_suggestions
+      data:
+        all_entities: false
