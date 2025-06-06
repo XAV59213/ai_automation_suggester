@@ -49,7 +49,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 50  # Reduced from 200
+        self.entity_limit = 50
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -169,7 +169,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             domain = eid.split(".")[0]
             attr_str = str(meta["attributes"])
             if len(attr_str) > MAX_ATTR:
-                attr_str = f"{attr_str[:MAX_ATTR]}...(truncated)"
+                attr_str = f"{attr_str[:MAX_ATTR]}..."
             ent_entry = self.entity_registry.async_get(eid) if self.entity_registry else None
             dev_entry = self.device_registry.async_get(ent_entry.device_id) if ent_entry and ent_entry.device_id else None
             area_id = ent_entry.area_id if ent_entry and ent_entry.area_id else (dev_entry.area_id if dev_entry else None)
@@ -205,7 +205,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             autom_codes = await self._read_automations_file_method(MAX_AUTOM, MAX_ATTR)
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
-                f"Entities in your Home Assistant (sampled):\n:\n{''.join(ent_sections)}\n"
+                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
                 "Existing Automations Overview:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
                 "Automations YAML Code (for analysis and improvement):\n"
@@ -245,11 +245,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         return automations
 
     async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
-        _LOGGER.debug("Reading automations from file, max_automations={max_autom}")
+        _LOGGER.debug(f"Reading automations from file, max={max_autom}")
         automations_file = Path(self.hass.config.path()) / "automations.yaml"
         autom_codes: list[str] = []
         try:
-            async with await anyio.open_file(automations_file, "r", encoding="utf-8")) as file:
+            async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
                 content = await file.read()
                 automations = yaml.safe_load(content) or []
             for automation in automations[:max_autom]:
