@@ -77,17 +77,18 @@ class GrokAutomationSuggestionsSensor(GrokAutomationBaseSensor):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        suggestions = self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet")[:500]
-        description = self._coordinator.data.get("description", "")[:500]
-        yaml_block = self._coordinator.data.get("yaml_block", "")[:500]
+        # Convertir les valeurs potentiellement None en chaînes et tronquer
+        suggestions = str(self._coordinator.data.get(SENSOR_KEY_SUGGESTIONS, "No suggestions yet"))[:500]
+        description = str(self._coordinator.data.get("description", ""))[:500]
+        yaml_block = str(self._coordinator.data.get("yaml_block", ""))[:500]
 
         return {
             "suggestions_summary": suggestions,
             "description_summary": description,
             "yaml_block_summary": yaml_block,
-            "last_update": str(self._coordinator.data.get("last_update")),
+            "last_update": str(self._coordinator.data.get("last_update", "")),
             "entities_processed": self._coordinator.data.get("entities_processed", [])[:10],
-            "provider": self._coordinator.data.get("provider"),
+            "provider": str(self._coordinator.data.get("provider", "")),
             "full_suggestions": "Consultez les notifications persistantes ou le fichier grok_suggestions.yaml pour les suggestions complètes."
         }
 
@@ -113,6 +114,6 @@ class GrokAutomationStatusSensor(GrokAutomationBaseSensor):
         return {
             "input_tokens": self._coordinator.data.get(SENSOR_KEY_INPUT_TOKENS, 0),
             "output_tokens": self._coordinator.data.get(SENSOR_KEY_OUTPUT_TOKENS, 0),
-            "model": self._coordinator.data.get(SENSOR_KEY_MODEL, ""),
-            "last_error": self._coordinator.data.get(SENSOR_KEY_LAST_ERROR),
+            "model": str(self._coordinator.data.get(SENSOR_KEY_MODEL, "")),
+            "last_error": str(self._coordinator.data.get(SENSOR_KEY_LAST_ERROR, "")),
         }
