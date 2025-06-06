@@ -49,4 +49,36 @@ sensor.grok_automation_status : Affiche l’état de connexion à l’API Grok.
 Obtenir une clé API
 Pour utiliser cette intégration, vous avez besoin d’une clé API Grok. Rendez-vous sur https://console.x.ai pour en obtenir une.
 Exemple de suggestion
-Yo, j’ai scanné ton salon et trouvé light.living_room_lamp et `sensor.motion
+Yo, j’ai scanné ton salon et trouvé light.living_room_lamp et sensor.motion_living_room. Voici une idée d’automatisation pour rendre ton salon plus cool :
+- id: living_room_motion_light
+  alias: Allumer la lampe du salon sur détection de mouvement
+  description: Active la lampe quand quelqu’un entre dans le salon, mais seulement le soir.
+  trigger:
+    - platform: state
+      entity_id: sensor.motion_living_room
+      to: "on"
+  condition:
+    - condition: sun
+      after: sunset
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room_lamp
+      data:
+        brightness_pct: 80
+
+Qu’en penses-tu ? Prêt à transformer ton salon en vaisseau spatial ? 🚀
+Contribution
+
+Forkez le dépôt sur https://github.com/XAV59213/grok_automation_suggester.
+Faites vos modifications et soumettez une Pull Request.
+Signalez les bugs ou suggestions via Issues.
+Pour tester localement, placez les fichiers dans custom_components/grok_automation_suggester/ et redémarrez Home Assistant.
+
+Crédits
+
+Basé sur l’intégration originale ai_automation_suggester.
+Propulsé par xAI.
+
+
+Allez, à vos automations, et que la force intergalactique soit avec vous ! 😎
