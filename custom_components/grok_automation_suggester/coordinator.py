@@ -23,6 +23,10 @@ from .const import (
     DEFAULT_TEMPERATURE,
     DEFAULT_MODELS,
     SENSOR_KEY_STATUS,
+    SENSOR_KEY_INPUT_TOKENS,
+    SENSOR_KEY_OUTPUT_TOKENS,
+    SENSOR_KEY_MODEL,
+    SENSOR_KEY_LAST_ERROR,
     PROVIDER_STATUS_CONNECTED,
     PROVIDER_STATUS_DISCONNECTED,
     PROVIDER_STATUS_ERROR,
@@ -44,7 +48,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 20  # Réduit pour limiter la taille du prompt
+        self.entity_limit = 20
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -58,6 +62,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             "provider": "Grok",
             "last_error": "",
             SENSOR_KEY_STATUS: PROVIDER_STATUS_INITIALIZING,
+            SENSOR_KEY_INPUT_TOKENS: 0,
+            SENSOR_KEY_OUTPUT_TOKENS: 0,
+            SENSOR_KEY_MODEL: "",
         }
         self.device_registry: dr.DeviceRegistry | None = None
         self.entity_registry: er.EntityRegistry | None = None
@@ -112,8 +119,12 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 return self.data
             prompt = await self._build_prompt(picked)
             _LOGGER.debug(f"Generated prompt length: {len(prompt)}")
-            response = await self._grok(prompt)
-            if response:
+            response_data = await self._grok(prompt)
+            if response_data:
+                response = response_data.get("content", "")
+                input_tokens = response_data.get("input_tokens", 0)
+                output_tokens = response_data.get("output_tokens", 0)
+                model = response_data.get("model", "")
                 _LOGGER.debug(f"Received response: {response[:200]}...")
                 match = YAML_RE.search(response)
                 yaml_block = match.group(1).strip() if match else ""
@@ -132,6 +143,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     "description": description,
                     "yaml_block": yaml_block,
                     "entities_processed": list(picked.keys()),
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "model": model,
                 }
                 suggestions_file = Path(self.hass.config.path("grok_suggestions.yaml"))
                 try:
@@ -149,6 +163,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     "provider": "Grok",
                     "last_error": "",
                     SENSOR_KEY_STATUS: PROVIDER_STATUS_CONNECTED,
+                    SENSOR_KEY_INPUT_TOKENS: input_tokens,
+                    SENSOR_KEY_OUTPUT_TOKENS: output_tokens,
+                    SENSOR_KEY_MODEL: model,
                 }
             else:
                 _LOGGER.warning("No response from Grok API")
@@ -161,6 +178,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                         "entities_processed": [],
                         "last_error": self._last_error or "No response from API",
                         SENSOR_KEY_STATUS: PROVIDER_STATUS_DISCONNECTED,
+                        SENSOR_KEY_INPUT_TOKENS: 0,
+                        SENSOR_KEY_OUTPUT_TOKENS: 0,
+                        SENSOR_KEY_MODEL: "",
                     }
                 )
             self.previous_entities = current
@@ -177,6 +197,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                     "entities_processed": [],
                     "last_error": self._last_error,
                     SENSOR_KEY_STATUS: PROVIDER_STATUS_ERROR,
+                    SENSOR_KEY_INPUT_TOKENS: 0,
+                    SENSOR_KEY_OUTPUT_TOKENS: 0,
+                    SENSOR_KEY_MODEL: "",
                 }
             )
             return self.data
@@ -184,8 +207,8 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
     async def _build_prompt(self, entities: dict) -> str:
         """Build the prompt for Grok API."""
         _LOGGER.debug(f"Building prompt for {len(entities)} entities")
-        MAX_ATTR = 200  # Réduit pour limiter la taille des attributs
-        MAX_AUTOM = 5   # Réduit pour limiter les automatisations
+        MAX_ATTR = 200
+        MAX_AUTOM = 5
         ent_sections: list[str] = []
         for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
             domain = eid.split(".")[0]
@@ -289,8 +312,8 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"Error parsing automations.yaml: {err}")
         return autom_codes
 
-    async def _grok(self, prompt: str) -> str | None:
-        """Send request to Grok API and return response."""
+    async def _grok(self, prompt: str) -> dict | None:
+        """Send request to Grok API and return response with metadata."""
         _LOGGER.debug(f"Sending request to Grok API with prompt length: {len(prompt)}")
         try:
             api_key = self._opt(CONF_GROK_API_KEY)
@@ -308,7 +331,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 "temperature": DEFAULT_TEMPERATURE,
             }
             headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            _LOGGER.debug(f"Request headers: {headers}, body: {body}")
+            _LOGGER.debug(f"Headers: {headers}, body: {body}")
             async with self.session.post(ENDPOINT_GROK, headers=headers, json=body) as resp:
                 _LOGGER.debug(f"API response status: {resp.status}")
                 if resp.status != 200:
@@ -320,7 +343,13 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(f"API response: {res}")
                 if not isinstance(res, dict) or "choices" not in res or not res["choices"] or "message" not in res["choices"][0] or "content" not in res["choices"][0]["message"]:
                     raise ValueError(f"Unexpected response format: {res}")
-                return res["choices"][0]["message"]["content"]
+                # Extraire les métadonnées de la réponse
+                return {
+                    "content": res["choices"][0]["message"]["content"],
+                    "input_tokens": res.get("usage", {}).get("prompt_tokens", 0),
+                    "output_tokens": res.get("usage", {}).get("completion_tokens", 0),
+                    "model": res.get("model", model),
+                }
         except Exception as err:
             self._last_error = f"Grok processing error: {str(err)}"
             _LOGGER.error(self._last_error)
