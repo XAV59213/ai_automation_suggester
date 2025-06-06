@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers import config_validation as cv
+import voluptuous as vol  # Replace config_validation with voluptuous
 from .const import DOMAIN, SERVICE_GENERATE_SUGGESTIONS, ATTR_CUSTOM_PROMPT
 from .coordinator import GrokAutomationCoordinator
 
@@ -27,9 +27,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN,
         SERVICE_GENERATE_SUGGESTIONS,
         handle_generate_suggestions,
-        schema=cv.make_entity_service_schema({
-            cv.Required("all_entities"): cv.boolean,
-            cv.Optional(ATTR_CUSTOM_PROMPT): cv.string,
+        schema=vol.Schema({  # Use voluptuous Schema
+            vol.Required("all_entities"): vol.Coerce(bool),  # Use vol.Required
+            vol.Optional(ATTR_CUSTOM_PROMPT): str,
         }),
     )
 
