@@ -31,17 +31,12 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 YAML_RE = re.compile(r"```yaml\s*([\s\S]+?)\s*```", flags=re.IGNORECASE)
-SYSTEM_PROMPT = """Salut, je suis Grok, ton acolyte IA créé par xAI, inspiré par le Guide du voyageur galactique et JARVIS de Iron Man ! 😎 Mon job ? Générer des automatisations Home Assistant qui déchirent, basées sur tes entités, zones et appareils. Je vais analyser ton setup avec un zeste d’humour et une pincée de génie intergalactique.
-
-Pour chaque entité :
-1. Je capte son rôle et son contexte.
-2. J’examine son état actuel et ses attributs.
-3. Je propose des automatisations futées ou des améliorations, en utilisant les vrais entity_ids.
-
-Si tu veux un thème précis (économie d’énergie, éclairage disco, sécurité maximale), dis-le-moi, et je m’adapte. Je peux aussi jeter un œil à tes automatisations existantes pour les booster. Allez, on fait péter les YAML ! 🚀"""
+SYSTEM_PROMPT = """Salut, je suis Grok, créé par xAI ! 😎 Je génère des automatisations Home Assistant basées sur tes entités, avec une touche d'humour. Analyse les entités fournies, propose des automatisations YAML en utilisant les vrais entity_ids, et adapte-toi à tout thème précisé. Go ! 🚀"""
 
 class GrokAutomationCoordinator(DataUpdateCoordinator):
+    """Coordinator for Grok Automation Suggester."""
     def __init__(self, hass: HomeAssistant, entry):
+        """Initialize the coordinator."""
         self.hass = hass
         self.entry = entry
         self.previous_entities: dict[str, dict] = {}
@@ -49,7 +44,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 50
+        self.entity_limit = 20  # Réduit de 50 à 20 pour limiter le prompt
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -69,23 +64,28 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.area_registry: ar.AreaRegistry | None = None
 
     def _opt(self, key: str, default=None):
+        """Get configuration option or default value."""
         return self.entry.options.get(key, self.entry.data.get(key, default))
 
     def _budgets(self) -> tuple[int, int]:
+        """Get input and output token budgets."""
         out_budget = self._opt(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
         in_budget = self._opt(CONF_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS)
         return in_budget, out_budget
 
     async def async_added_to_hass(self):
+        """Handle coordinator added to Home Assistant."""
         await super().async_added_to_hass()
         self.device_registry = dr.async_get(self.hass)
         self.entity_registry = er.async_get(self.hass)
         self.area_registry = ar.async_get(self.hass)
 
     async def async_shutdown(self):
+        """Handle coordinator shutdown."""
         return
 
     async def _async_update_data(self) -> dict:
+        """Update data and generate suggestions."""
         _LOGGER.debug("Starting data update")
         try:
             now = datetime.now()
@@ -161,9 +161,10 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             return self.data
 
     async def _build_prompt(self, entities: dict) -> str:
+        """Build the prompt for Grok API."""
         _LOGGER.debug(f"Building prompt for {len(entities)} entities")
-        MAX_ATTR = 500
-        MAX_AUTOM = 100
+        MAX_ATTR = 200  # Réduit de 500 à 200 pour limiter la taille des attributs
+        MAX_AUTOM = 5   # Réduit à 5 automatisations
         ent_sections: list[str] = []
         for eid, meta in random.sample(list(entities.items()), min(len(entities), self.entity_limit)):
             domain = eid.split(".")[0]
@@ -185,18 +186,6 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 f"State: {meta['state']}\n"
                 f"Attributes: {attr_str}\n"
                 f"Area: {area_name}\n"
-            )
-            if dev_entry:
-                block += (
-                    "Device Info:\n"
-                    f"  Manufacturer: {dev_entry.manufacturer}\n"
-                    f"  Model: {dev_entry.model}\n"
-                    f"  Device Name: {dev_entry.name_by_user or dev_entry.name}\n"
-                    f"  Device ID: {dev_entry.id}\n"
-                )
-            block += (
-                f"Last Changed: {meta['last_changed']}\n"
-                f"Last Updated: {meta['last_updated']}\n"
                 "---\n"
             )
             ent_sections.append(block)
@@ -205,28 +194,27 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             autom_codes = await self._read_automations_file_method(MAX_AUTOM, MAX_ATTR)
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
-                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
-                "Existing Automations Overview:\n"
+                f"Entities (sampled):\n{''.join(ent_sections)}\n"
+                "Existing Automations:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-                "Automations YAML Code (for analysis and improvement):\n"
-                f"{''.join(autom_codes) if autom_codes else 'No automations YAML available.'}\n\n"
-                "Please analyze both the entities and existing automations. "
-                "Propose detailed improvements to existing automations and suggest new ones "
-                "that reference only the entity_ids shown above."
+                "Automations YAML:\n"
+                f"{''.join(autom_codes) if autom_codes else 'None available.'}\n\n"
+                "Propose new automations or improvements using the entity_ids above."
             )
         else:
             autom_sections = self._read_automations_default(MAX_AUTOM, MAX_ATTR)
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
-                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                f"Entities (sampled):\n{''.join(ent_sections)}\n"
                 "Existing Automations:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-                "Please propose detailed automations and improvements that reference only the entity_ids above."
+                "Propose new automations using the entity_ids above."
             )
         _LOGGER.debug(f"Prompt built, length: {len(builded_prompt)}")
         return builded_prompt
 
     def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
+        """Read default automations from Home Assistant."""
         _LOGGER.debug(f"Reading default automations, max={max_autom}")
         automations: list[str] = []
         for aid in self.hass.states.async_entity_ids("automation")[:max_autom]:
@@ -245,9 +233,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         return automations
 
     async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
+        """Read automations from automations.yaml file."""
         _LOGGER.debug(f"Reading automations from file, max={max_autom}")
         automations_file = Path(self.hass.config.path()) / "automations.yaml"
         autom_codes: list[str] = []
+        max_autom = min(max_autom, 5)  # Limiter à 5 automatisations
         try:
             async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
                 content = await file.read()
@@ -279,6 +269,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         return autom_codes
 
     async def _grok(self, prompt: str) -> str | None:
+        """Send request to Grok API and return response."""
         _LOGGER.debug(f"Sending request to Grok API with prompt length: {len(prompt)}")
         try:
             api_key = self._opt(CONF_GROK_API_KEY)
@@ -287,7 +278,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             if not api_key:
                 raise ValueError("Grok API key not configured")
             if len(prompt) // 4 > in_budget:
-                _LOGGER.warning(f"Prompt truncated to fit input budget: {in_budget * 4}")
+                _LOGGER.debug(f"Prompt truncated to fit input budget: {in_budget * 4}")
                 prompt = prompt[:in_budget * 4]
             body = {
                 "model": model,
