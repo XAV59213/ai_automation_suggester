@@ -1,12 +1,12 @@
 {
   "domain": "grok_automation_suggester",
   "name": "Grok Automation Suggester",
-  "codeowners": ["@YourGitHubUsername"],
+  "codeowners": ["@XAV59213"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/YourGitHubUsername/grok_automation_suggester",
+  "documentation": "https://github.com/XAV59213/grok_automation_suggester",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/YourGitHubUsername/grok_automation_suggester/issues",
+  "issue_tracker": "https://github.com/XAV59213/grok_automation_suggester/issues",
   "requirements": [
     "aiohttp>=3.8.0",
     "pyyaml>=6.0",
