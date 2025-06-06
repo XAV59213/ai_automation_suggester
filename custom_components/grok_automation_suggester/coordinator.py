@@ -49,7 +49,7 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.scan_all = False
         self.selected_domains: list[str] = []
-        self.entity_limit = 200
+        self.entity_limit = 50  # Reduced from 200
         self.automation_read_file = True
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self.session = async_get_clientsession(hass)
@@ -205,11 +205,11 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
             autom_codes = await self._read_automations_file_method(MAX_AUTOM, MAX_ATTR)
             builded_prompt = (
                 f"{self.SYSTEM_PROMPT}\n\n"
-                f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
+                f"Entities in your Home Assistant (sampled):\n:\n{''.join(ent_sections)}\n"
                 "Existing Automations Overview:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
                 "Automations YAML Code (for analysis and improvement):\n"
-                f"{''.join(autom_codes) if autom_codes else 'No automations YAML code available.'}\n\n"
+                f"{''.join(autom_codes) if autom_codes else 'No automations YAML available.'}\n\n"
                 "Please analyze both the entities and existing automations. "
                 "Propose detailed improvements to existing automations and suggest new ones "
                 "that reference only the entity_ids shown above."
@@ -221,35 +221,35 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 f"Entities in your Home Assistant (sampled):\n{''.join(ent_sections)}\n"
                 "Existing Automations:\n"
                 f"{''.join(autom_sections) if autom_sections else 'None found.'}\n\n"
-                "Please propose detailed automatisations and improvements that reference only the entity_ids above."
+                "Please propose detailed automations and improvements that reference only the entity_ids above."
             )
         _LOGGER.debug(f"Prompt built, length: {len(builded_prompt)}")
         return builded_prompt
 
     def _read_automations_default(self, max_autom: int, max_attr: int) -> list[str]:
         _LOGGER.debug(f"Reading default automations, max={max_autom}")
-        autom_sections: list[str] = []
+        automations: list[str] = []
         for aid in self.hass.states.async_entity_ids("automation")[:max_autom]:
             st = self.hass.states.get(aid)
             if st:
                 attr = str(st.attributes)
                 if len(attr) > max_attr:
                     attr = f"{attr[:max_attr]}...(truncated)"
-                autom_sections.append(
+                automations.append(
                     f"Entity: {aid}\n"
                     f"Friendly Name: {st.attributes.get('friendly_name', aid)}\n"
                     f"State: {st.state}\n"
                     f"Attributes: {attr}\n"
                     "---\n"
                 )
-        return autom_sections
+        return automations
 
     async def _read_automations_file_method(self, max_autom: int, max_attr: int) -> list[str]:
-        _LOGGER.debug(f"Reading automations from file, max={max_autom}")
+        _LOGGER.debug("Reading automations from file, max_automations={max_autom}")
         automations_file = Path(self.hass.config.path()) / "automations.yaml"
         autom_codes: list[str] = []
         try:
-            async with await anyio.open_file(automations_file, "r", encoding="utf-8") as file:
+            async with await anyio.open_file(automations_file, "r", encoding="utf-8")) as file:
                 content = await file.read()
                 automations = yaml.safe_load(content) or []
             for automation in automations[:max_autom]:
