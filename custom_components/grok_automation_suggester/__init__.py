@@ -4,7 +4,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
 import voluptuous as vol
 from .const import DOMAIN, SERVICE_GENERATE_SUGGESTIONS, ATTR_CUSTOM_PROMPT
-from .coordinator import GrokAutomationCoordinator
+from .coordinator import GrokAutomationCoordinator, SYSTEM_PROMPT  # Import SYSTEM_PROMPT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.error(f"Error generating suggestions: {str(err)}")
             raise
         finally:
-            coordinator.SYSTEM_PROMPT = coordinator.__class__.SYSTEM_PROMPT  # Reset prompt
+            coordinator.SYSTEM_PROMPT = SYSTEM_PROMPT  # Reset using imported SYSTEM_PROMPT
 
     hass.services.async_register(
         DOMAIN,
