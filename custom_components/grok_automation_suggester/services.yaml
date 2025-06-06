@@ -1,1 +1,18 @@
-
+generate_suggestions:
+  name: Generate Suggestions
+  description: Generate new automation suggestions based on user preferences.
+  fields:
+    all_entities:
+      name: All Entities
+      description: Whether to scan all entities or only new ones.
+      required: true
+      example: false
+      selector:
+        boolean: {}
+    custom_prompt:
+      name: Custom Prompt
+      description: Optional custom prompt to guide the suggestion generation.
+      required: false
+      example: "Create energy-saving automations"
+      selector:
+        text: {}
