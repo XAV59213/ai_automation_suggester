@@ -4,7 +4,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
 import voluptuous as vol
 from .const import DOMAIN, SERVICE_GENERATE_SUGGESTIONS, ATTR_CUSTOM_PROMPT
-from .coordinator import GrokAutomationCoordinator, SYSTEM_PROMPT  # Import SYSTEM_PROMPT
+from .coordinator import GrokAutomationCoordinator, SYSTEM_PROMPT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,20 +17,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_generate_suggestions(call: ServiceCall) -> None:
         """Handle the generate_suggestions service call."""
-        _LOGGER.debug(f"Service call received: all_entities={call.data.get('all_entities')}, custom_prompt={call.data.get(ATTR_CUSTOM_PROMPT)}")
+        _LOGGER.info(f"Service called with all_entities={call.data.get('all_entities')}, custom_prompt={call.data.get(ATTR_CUSTOM_PROMPT)}")
         try:
             coordinator.scan_all = call.data.get("all_entities", False)
             custom_prompt = call.data.get(ATTR_CUSTOM_PROMPT)
             if custom_prompt:
                 coordinator.SYSTEM_PROMPT += f"\n\nCustom Prompt: {custom_prompt}"
                 _LOGGER.debug(f"Custom prompt added: {custom_prompt}")
+            _LOGGER.info("Starting coordinator refresh")
             await coordinator.async_refresh()
             _LOGGER.info("Suggestions generated successfully")
         except Exception as err:
-            _LOGGER.error(f"Error generating suggestions: {str(err)}")
+            _LOGGER.error(f"Error generating suggestions: {str(err)}", exc_info=True)
             raise
         finally:
-            coordinator.SYSTEM_PROMPT = SYSTEM_PROMPT  # Reset using imported SYSTEM_PROMPT
+            coordinator.SYSTEM_PROMPT = SYSTEM_PROMPT
 
     hass.services.async_register(
         DOMAIN,
