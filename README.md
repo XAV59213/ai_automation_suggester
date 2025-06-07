@@ -1,64 +1,90 @@
-# Grok : Générateur de suggestions, scripts, scènes et automatisation
+# 🌌 Grok Automation Suggester
 
 ![Logo](./images/Grok-Logo-Text-512x256.png)
 
 [![GitHub release](https://img.shields.io/github/v/release/XAV59213/grok_automation_suggester)](https://github.com/XAV59213/grok_automation_suggester/releases)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg?logo=home-assistant)](https://hacs.xyz/)
 
+<a href="https://www.buymeacoffee.com/xav59213">
+  <img src="https://img.buymeacoffee.com/button-api/?text=xav59213&emoji=&slug=xav59213&button_colour=5F7FFF&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00" />
+</a>
 
-<a href="https://www.buymeacoffee.com/xav59213"> <img src="https://img.buymeacoffee.com/button-api/?text=xav59213&emoji=&slug=xav59213&button_colour=5F7FFF&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00" /> 
+---
 
-Une intégration Home Assistant qui utilise l’IA Grok de xAI pour générer des suggestions d’automatisations intelligentes et fun pour votre maison connectée. Inspirée par le Guide du voyageur galactique et JARVIS de Iron Man, cette intégration apporte une touche d’humour et de créativité à vos automations YAML ! 🚀
-Fonctionnalités
+## 🚀 Présentation
 
-Suggestions IA : Génère des automations basées sur vos entités, zones et appareils.
-Style Grok : Prompts personnalisés avec de l’humour et une vibe intergalactique.
-Notifications persistantes : Recevez des suggestions directement dans Home Assistant.
-Capteurs : Suivez les suggestions et l’état via des capteurs (sensor.grok_automation_suggestions, sensor.grok_automation_status).
-Configuration simple : Utilise uniquement l’API Grok, facile à configurer via l’interface UI.
+**Grok Automation Suggester** est une intégration Home Assistant propulsée par l’IA **Grok** de **xAI**, conçue pour générer automatiquement des suggestions d’automatisations **intelligentes** et **fun**. Inspirée par *Le Guide du voyageur galactique* et *JARVIS*, elle transforme votre maison connectée en vaisseau spatial intelligent 🛸.
 
-Installation
+---
 
-Via HACS :
-Ajoutez ce dépôt comme dépôt personnalisé dans HACS (https://github.com/XAV59213/grok_automation_suggester).
-Recherchez "Grok Automation Suggester" et installez.
+## ✨ Fonctionnalités
 
+- 🤖 **Suggestions IA** : Génère des automations en fonction de vos entités, zones et appareils.
+- 🌌 **Style Grok** : Prompts humoristiques et vibe intergalactique.
+- 🔔 **Notifications persistantes** dans Home Assistant.
+- 📊 **Capteurs intégrés** :  
+  - `sensor.grok_automation_suggestions`  
+  - `sensor.grok_automation_status`
+- ⚙️ **Configuration simple** via l’UI de Home Assistant.
+- 💬 **Prompt personnalisé** pour guider les suggestions.
 
-Manuelle :
-Copiez le dossier custom_components/grok_automation_suggester/ dans votre répertoire custom_components/ de Home Assistant.
-Redémarrez Home Assistant.
+---
 
+## 🛠️ Installation
 
+### 📦 Via HACS
 
-Configuration
+1. Ajoutez ce dépôt comme **Custom Repository** :  
+   `https://github.com/XAV59213/grok_automation_suggester`
+2. Recherchez **Grok Automation Suggester** et installez.
+3. Redémarrez Home Assistant.
 
-Allez dans Settings > Devices & Services > Add Integration.
-Sélectionnez Grok Automation Suggester.
-Entrez votre clé API Grok (obtenue sur https://console.x.ai).
-Configurez les paramètres optionnels (modèle, tokens max).
-Validez pour activer l’intégration.
+### 📁 Manuelle
 
-Utilisation
+1. Copiez le dossier `custom_components/grok_automation_suggester/` dans votre répertoire `custom_components/`.
+2. Redémarrez Home Assistant.
 
-Service : Appelez le service grok_automation_suggester.generate_suggestions pour générer des suggestions manuellement.
-Paramètres :
-all_entities (boolean) : Analyse toutes les entités ou seulement les nouvelles.
-custom_prompt (string, facultatif) : Ajoute un prompt personnalisé pour guider les suggestions (ex. "Crée des automatisations pour économiser l’énergie").
+---
 
+## ⚙️ Configuration
 
+1. Allez dans **Paramètres > Appareils & Services > Ajouter une intégration**.
+2. Sélectionnez **Grok Automation Suggester**.
+3. Entrez votre **clé API Grok** (à obtenir sur [https://console.x.ai](https://console.x.ai)).
+4. Configurez les options : modèle, nombre max de tokens, etc.
 
+---
 
-Automatisation : Une automatisation exemple (grok_new_entity_automation.yaml) est incluse pour déclencher des suggestions sur de nouvelles entités.
-Capteurs :
-sensor.grok_automation_suggestions : Contient les suggestions et le YAML généré.
-sensor.grok_automation_status : Affiche l’état de connexion à l’API Grok.
+## 🚧 Utilisation
 
+### 🔧 Service : `grok_automation_suggester.generate_suggestions`
 
+- `all_entities` *(bool)* : Analyse toutes les entités ou seulement les nouvelles.
+- `custom_prompt` *(string, optionnel)* : Exemple — *"Crée des automatisations pour économiser l’énergie"*.
 
-Obtenir une clé API
-Pour utiliser cette intégration, vous avez besoin d’une clé API Grok. Rendez-vous sur https://console.x.ai pour en obtenir une.
-Exemple de suggestion
-Yo, j’ai scanné ton salon et trouvé light.living_room_lamp et sensor.motion_living_room. Voici une idée d’automatisation pour rendre ton salon plus cool :
+### 🧠 Automatisation d'exemple
+
+Fichier : `grok_new_entity_automation.yaml`  
+> Déclenche une suggestion quand une nouvelle entité est détectée.
+
+### 🛰️ Capteurs disponibles
+
+- `sensor.grok_automation_suggestions` : Contenu des suggestions.
+- `sensor.grok_automation_status` : État de connexion à l’API Grok.
+
+---
+
+## 🔑 Obtenir une clé API
+
+Inscrivez-vous sur [https://console.x.ai](https://console.x.ai) pour obtenir une clé d’API gratuite (ou premium).
+
+---
+
+## 🧪 Exemple de suggestion
+
+> *Yo, j’ai scanné ton salon et trouvé `light.living_room_lamp` et `sensor.motion_living_room`... Voici une idée pour rendre ton salon plus cool :*
+
+```yaml
 - id: living_room_motion_light
   alias: Allumer la lampe du salon sur détection de mouvement
   description: Active la lampe quand quelqu’un entre dans le salon, mais seulement le soir.
@@ -75,19 +101,23 @@ Yo, j’ai scanné ton salon et trouvé light.living_room_lamp et sensor.motion_
         entity_id: light.living_room_lamp
       data:
         brightness_pct: 80
+    Prêt à transformer ton salon en cockpit spatial ? 🚀
 
-Qu’en penses-tu ? Prêt à transformer ton salon en vaisseau spatial ? 🚀
-Contribution
+🤝 Contribuer
 
-Forkez le dépôt sur https://github.com/XAV59213/grok_automation_suggester.
-Faites vos modifications et soumettez une Pull Request.
-Signalez les bugs ou suggestions via Issues.
-Pour tester localement, placez les fichiers dans custom_components/grok_automation_suggester/ et redémarrez Home Assistant.
+    Forkez le dépôt : https://github.com/XAV59213/grok_automation_suggester
 
-Crédits
+    Apportez vos modifications.
 
-Basé sur l’intégration originale ai_automation_suggester.
-Propulsé par xAI.
+    Soumettez une Pull Request.
 
+    Signalez bugs & idées via les Issues.
 
-Allez, à vos automations, et que la force intergalactique soit avec vous ! 😎
+Pour tester localement, placez le code dans custom_components/grok_automation_suggester/ puis redémarrez Home Assistant.
+🙏 Remerciements
+
+    Basé sur le projet original ai_automation_suggester
+
+    Propulsé par xAI
+
+    À vos automatisations, et que la force intergalactique soit avec vous ! 😎
