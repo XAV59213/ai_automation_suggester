@@ -101,6 +101,7 @@ Inscrivez-vous sur [https://console.x.ai](https://console.x.ai) pour obtenir une
         entity_id: light.living_room_lamp
       data:
         brightness_pct: 80
+```
     Prêt à transformer ton salon en cockpit spatial ? 🚀
 
 🤝 Contribuer
