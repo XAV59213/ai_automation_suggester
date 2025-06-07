@@ -1,6 +1,6 @@
 # Grok : Générateur de suggestions, scripts, scènes et automatisation
 
-![Logo](./images/Grok-Logo-Text-256x512.png)
+![Logo](./images/Grok-Logo-Text-512x256.png)
 
 [![GitHub release](https://img.shields.io/github/v/release/XAV59213/grok_automation_suggester)](https://github.com/XAV59213/grok_automation_suggester/releases)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg?logo=home-assistant)](https://hacs.xyz/)
