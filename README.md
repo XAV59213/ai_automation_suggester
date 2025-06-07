@@ -1,4 +1,6 @@
-Grok Automation Suggester
+# Grok : Générateur de suggestions, scripts, scènes et automatisation
+
+
 Une intégration Home Assistant qui utilise l’IA Grok de xAI pour générer des suggestions d’automatisations intelligentes et fun pour votre maison connectée. Inspirée par le Guide du voyageur galactique et JARVIS de Iron Man, cette intégration apporte une touche d’humour et de créativité à vos automations YAML ! 🚀
 Fonctionnalités
 
