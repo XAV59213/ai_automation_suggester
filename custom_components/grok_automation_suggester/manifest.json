@@ -1,6 +1,6 @@
 {
   "domain": "grok_automation_suggester",
-  "name": "Grok Automation Suggester",
+  "name": "Grok Générateur de suggestions, scripts, scènes et automatisation",
   "codeowners": ["@XAV59213"],
   "config_flow": true,
   "dependencies": [],
