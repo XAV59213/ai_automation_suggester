@@ -111,7 +111,9 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                         "last_updated": st.last_updated,
                         "friendly_name": st.attributes.get("friendly_name", eid),
                     }
+            _LOGGER.debug(f"Previous entities: {list(self.previous_entities.keys())}")
             picked = current if self.scan_all else {k: v for k, v in current.items() if k not in self.previous_entities}
+            _LOGGER.info(f"Entities picked for processing: {list(picked.keys())}")
             if not picked:
                 _LOGGER.debug("No new entities to process")
                 self.previous_entities = current
@@ -129,14 +131,12 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 match = YAML_RE.search(response)
                 yaml_block = match.group(1).strip() if match else ""
                 description = YAML_RE.sub("", response).strip() if match else ""
-                # Créer une notification persistante
                 persistent_notification.async_create(
                     self.hass,
                     message=response,
                     title="Grok Automation Suggestions",
                     notification_id=f"grok_automation_suggestions_{now.timestamp()}",
                 )
-                # Écrire les suggestions dans un fichier
                 suggestions_data = {
                     "timestamp": now.isoformat(),
                     "suggestions": response,
@@ -149,9 +149,10 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
                 }
                 suggestions_file = Path(self.hass.config.path("grok_suggestions.yaml"))
                 try:
+                    _LOGGER.info(f"Writing suggestions to {suggestions_file}")
                     async with await anyio.open_file(suggestions_file, "w", encoding="utf-8") as file:
                         await file.write(yaml.safe_dump(suggestions_data, allow_unicode=True))
-                    _LOGGER.debug(f"Suggestions written to {suggestions_file}")
+                    _LOGGER.info(f"Successfully wrote suggestions to {suggestions_file}")
                 except Exception as err:
                     _LOGGER.error(f"Failed to write suggestions to {suggestions_file}: {err}")
                 self.data = {
@@ -315,42 +316,45 @@ class GrokAutomationCoordinator(DataUpdateCoordinator):
     async def _grok(self, prompt: str) -> dict | None:
         """Send request to Grok API and return response with metadata."""
         _LOGGER.debug(f"Sending request to Grok API with prompt length: {len(prompt)}")
-        try:
-            api_key = self._opt(CONF_GROK_API_KEY)
-            model = self._opt(CONF_GROK_MODEL, DEFAULT_MODELS["Grok"])
-            in_budget, out_budget = self._budgets()
-            if not api_key:
-                raise ValueError("Grok API key not configured")
-            if len(prompt) // 4 > in_budget:
-                _LOGGER.debug(f"Prompt truncated to fit input budget: {in_budget * 4}")
-                prompt = prompt[:in_budget * 4]
-            body = {
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": out_budget,
-                "temperature": DEFAULT_TEMPERATURE,
-            }
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            _LOGGER.debug(f"Headers: {headers}, body: {body}")
-            async with self.session.post(ENDPOINT_GROK, headers=headers, json=body) as resp:
-                _LOGGER.debug(f"API response status: {resp.status}")
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    self._last_error = f"Grok error {resp.status}: {error_text}"
-                    _LOGGER.error(self._last_error)
-                    return None
-                res = await resp.json()
-                _LOGGER.debug(f"API response: {res}")
-                if not isinstance(res, dict) or "choices" not in res or not res["choices"] or "message" not in res["choices"][0] or "content" not in res["choices"][0]["message"]:
-                    raise ValueError(f"Unexpected response format: {res}")
-                # Extraire les métadonnées de la réponse
-                return {
-                    "content": res["choices"][0]["message"]["content"],
-                    "input_tokens": res.get("usage", {}).get("prompt_tokens", 0),
-                    "output_tokens": res.get("usage", {}).get("completion_tokens", 0),
-                    "model": res.get("model", model),
+        for attempt in range(3):
+            try:
+                api_key = self._opt(CONF_GROK_API_KEY)
+                model = self._opt(CONF_GROK_MODEL, DEFAULT_MODELS["Grok"])
+                in_budget, out_budget = self._budgets()
+                if not api_key:
+                    raise ValueError("Grok API key not configured")
+                if len(prompt) // 4 > in_budget:
+                    _LOGGER.debug(f"Prompt truncated to fit input budget: {in_budget * 4}")
+                    prompt = prompt[:in_budget * 4]
+                body = {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": out_budget,
+                    "temperature": DEFAULT_TEMPERATURE,
                 }
-        except Exception as err:
-            self._last_error = f"Grok processing error: {str(err)}"
-            _LOGGER.error(self._last_error)
-            return None
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                async with self.session.post(ENDPOINT_GROK, headers=headers, json=body) as resp:
+                    if resp.status != 200:
+                        error_text = await resp.text()
+                        self._last_error = f"Grok error {resp.status}: {error_text}"
+                        _LOGGER.error(self._last_error)
+                        if attempt < 2:
+                            _LOGGER.info(f"Retrying API call (attempt {attempt + 2}/3)")
+                            continue
+                        return None
+                    res = await resp.json()
+                    if not isinstance(res, dict) or "choices" not in res or not res["choices"]:
+                        raise ValueError(f"Unexpected response format: {res}")
+                    return {
+                        "content": res["choices"][0]["message"]["content"],
+                        "input_tokens": res.get("usage", {}).get("prompt_tokens", 0),
+                        "output_tokens": res.get("usage", {}).get("completion_tokens", 0),
+                        "model": res.get("model", model),
+                    }
+            except Exception as err:
+                self._last_error = f"Grok processing error (attempt {attempt + 1}/3): {str(err)}"
+                _LOGGER.error(self._last_error)
+                if attempt < 2:
+                    _LOGGER.info(f"Retrying API call (attempt {attempt + 2}/3)")
+                    continue
+                return None
