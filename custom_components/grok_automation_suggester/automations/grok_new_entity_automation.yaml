@@ -7,6 +7,15 @@
       event_data:
         action: create
   action:
+    - service: system_log.write
+      data:
+        message: "Nouvelle entité détectée, lancement des suggestions Grok"
+        level: info
     - service: grok_automation_suggester.generate_suggestions
       data:
         all_entities: false
+    - condition: "{{ not is_state('sensor.grok_automation_suggestions', 'No suggestions') }}"
+      service: notify.persistent_notification
+      data:
+        title: "Nouvelles suggestions d’automatisation Grok"
+        message: "Consultez sensor.grok_automation_suggestions pour les détails."
