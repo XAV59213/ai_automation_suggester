@@ -1,4 +1,4 @@
-# 🌌 Grok Automation Suggester
+# 🌌 Grok : Générateur de suggestions, scripts, scènes et automatisation
 
 ![Logo](./images/Grok-Logo-Text-512x256.png)
 
