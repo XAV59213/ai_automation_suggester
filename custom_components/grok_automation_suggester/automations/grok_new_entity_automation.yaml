@@ -1,21 +1,30 @@
 - id: grok_new_entity_automation
   alias: Détection de nouvelle entité pour Grok Suggestions
-  description: Déclenche la génération de suggestions lorsqu’une nouvelle entité est détectée.
+  description: Déclenche la génération de suggestions lorsqu’une nouvelle entité est ajoutée au registre.
   trigger:
     - platform: event
       event_type: entity_registry_updated
-      event_data:
-        action: create
+  condition:
+    - condition: template
+      value_template: "{{ trigger.event is defined and trigger.event.data.action == 'create' and trigger.event.data.entity_id is defined }}"
   action:
     - service: system_log.write
       data:
-        message: "Nouvelle entité détectée, lancement des suggestions Grok"
+        message: >
+          Nouvelle entité détectée: {% if trigger.event is defined and trigger.event.data.entity_id is defined %}{{ trigger.event.data.entity_id }}{% else %}inconnue{% endif %}. Lancement des suggestions Grok.
         level: info
     - service: grok_automation_suggester.generate_suggestions
       data:
         all_entities: false
-    - condition: "{{ not is_state('sensor.grok_automation_suggestions', 'No suggestions') }}"
-      service: notify.persistent_notification
-      data:
-        title: "Nouvelles suggestions d’automatisation Grok"
-        message: "Consultez sensor.grok_automation_suggestions pour les détails."
+    - delay: 5
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ states('sensor.grok_automation_suggestions') != 'No suggestions' }}"
+          sequence:
+            - service: notify.persistent_notification
+              data:
+                title: "Nouvelles suggestions d’automatisation Grok"
+                message: >
+                  Des suggestions ont été générées. État du capteur: {{ states('sensor.grok_automation_suggestions') }}.
+                  Consultez sensor.grok_automation_suggestions ou grok_suggestions.yaml pour les détails.
