@@ -1,9 +1,9 @@
 {
-  "title": "Grok Automation Suggester",
+  "title": "Grok générateur de suggestions",
   "config": {
     "step": {
       "user": {
-        "title": "Configurer Grok Automation Suggester",
+        "title": "Configurer Grok",
         "description": "Entrez votre clé API Grok et configurez les paramètres pour commencer à recevoir des suggestions d’automatisations. [api_error]",
         "data": {
           "grok_api_key": "Clé API Grok",
@@ -20,7 +20,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Options de Grok Automation Suggester",
+        "title": "Options de Grok",
         "description": "Mettez à jour votre configuration pour l’intégration Grok Automation Suggester.",
         "data": {
           "grok_api_key": "Clé API Grok",
